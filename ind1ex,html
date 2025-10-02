@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Moja Stranica</title>
+  <title>Moja Stranica - Bosna</title>
   <style>
     body {font-family: Arial, sans-serif; margin:0; padding:0; background:#f6f8fb; color:#333;}
     header {background:#1261a0; color:#fff; padding:20px; text-align:center;}
@@ -54,7 +54,7 @@
 <body>
 
   <header>
-    <h1>Dobrodošli na našu stranicu</h1>
+    <h1>Dobrodošli na Bosna stranicu</h1>
     <nav>
       <ul>
         <li><a onclick="openModal('onamaModal')">O nama</a></li>
