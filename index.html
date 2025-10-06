@@ -1,1 +1,45 @@
-async function giveAdvice(ssyptoms
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIDOKTOR – Glasovni asistent</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #status, #transcript, #reply {
+      margin-top: 20px;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #reply {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🩺 AIDOKTOR</h1>
+  <p>Pritisni dugme i reci svoje simptome.</p>
+
+  <button id="startBtn">🎙️ Start</button>
+  <button id="stopBtn" disabled>🛑 Stop</button>
+
+  <div id="status">Status: spreman</div>
+  <div id="transcript"></div>
+  <div id="reply"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
