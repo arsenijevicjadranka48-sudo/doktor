@@ -1,137 +1,214 @@
+// AIDOKTOR Voice Q&A
+// Project: Single-file React frontend + Express backend example
+// WARNING: Do NOT keep your OpenAI API key in a public GitHub repo. See README below.
+
+---
+
+# README
+
+This project demonstrates a simple voice-powered Q&A web app:
+- Frontend (React) listens to the microphone using the Web Speech API, sends recognized text to a backend endpoint, and plays back the assistant's response using the browser TTS (speechSynthesis).
+- Backend (Node + Express) proxies requests to the OpenAI Chat completions API using a secret API key.
+
+**Security note (important):** You must NOT put your OpenAI API key directly into client-side code. If your repo currently stores the key in plaintext, move it to an environment variable or GitHub Secret and never commit it to a public repo. If you *must* read the key from a file on the server, ensure the repository is private and that file is in .gitignore (still not recommended).
+
+---
+
+// File: package.json (backend)
+{
+  "name": "aidoktor-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "openai": "^4.0.0"
+  }
+}
+
+---
+
+// File: server.js (backend)
+// Minimal Express server that proxies chat requests to OpenAI
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const { Configuration, OpenAIApi } = require('openai');
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+// Read API key from environment variable named AIDOKTOR
+// In your deployment or dev environment, set: AIDOKTOR=sk-....
+const OPENAI_KEY = process.env.AIDOKTOR;
+if (!OPENAI_KEY) {
+  console.warn('Warning: AIDOKTOR environment variable is not set. Set process.env.AIDOKTOR to your OpenAI key.');
+}
+
+const configuration = new Configuration({ apiKey: OPENAI_KEY });
+const openai = new OpenAIApi(configuration);
+
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
+
+    // Example using Chat Completion (gpt-4o-mini or gpt-4o etc. change as desired)
+    const response = await openai.createChatCompletion({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You are AIDOKTOR: helpful, concise medical assistant (or modify as needed).' },
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 400
+    });
+
+    const assistantText = response.data.choices?.[0]?.message?.content || '';
+    res.json({ reply: assistantText });
+  } catch (err) {
+    console.error('OpenAI error', err?.response?.data || err.message || err);
+    res.status(500).json({ error: 'OpenAI request failed', details: err?.message || err });
+  }
+});
+
+// Serve static frontend when built (optional)
+app.use(express.static('public'));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+
+---
+
+// File: public/index.html (frontend container)
 <!doctype html>
-<html lang="hr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Moja Stranica - Bosna</title>
-  <style>
-    body {font-family: Arial, sans-serif; margin:0; padding:0; background:#f6f8fb; color:#333;}
-    header {background:#1261a0; color:#fff; padding:20px; text-align:center;}
-    nav ul {list-style:none; margin:0; padding:0; display:flex; justify-content:center; gap:20px;}
-    nav a {color:#fff; text-decoration:none; font-weight:bold; cursor:pointer;}
-    main {padding:60px 20px; text-align:center;}
-    footer {background:#1261a0; color:#fff; text-align:center; padding:15px; margin-top:40px;}
-
-    /* Modal stilovi */
-    .modal {
-      display:none;
-      position:fixed;
-      z-index:1000;
-      left:0; top:0;
-      width:100%; height:100%;
-      background:rgba(0,0,0,0.6);
-      align-items:center;
-      justify-content:center;
-    }
-    .modal-content {
-      background:#fff;
-      padding:30px;
-      border-radius:10px;
-      max-width:600px;
-      width:90%;
-      text-align:left;
-      box-shadow:0 4px 15px rgba(0,0,0,0.3);
-      animation:fadeIn 0.3s ease;
-      position:relative;
-    }
-    .modal-content h2 {color:#1261a0; margin-top:0;}
-    .close {
-      position:absolute;
-      top:10px;
-      right:15px;
-      font-size:24px;
-      font-weight:bold;
-      color:#333;
-      cursor:pointer;
-    }
-    .close:hover {color:#1261a0;}
-    @keyframes fadeIn {
-      from {opacity:0; transform:scale(0.9);}
-      to {opacity:1; transform:scale(1);}
-    }
-  </style>
-</head>
-<body>
-
-  <header>
-    <h1>Dobrodošli na Bosna stranicu</h1>
-    <nav>
-      <ul>
-        <li><a onclick="openModal('onamaModal')">O nama</a></li>
-        <li><a onclick="openModal('uslugeModal')">Usluge</a></li>
-        <li><a onclick="openModal('testimonialsModal')">Testimonijali</a></li>
-        <li><a onclick="openModal('kontaktModal')">Kontakt</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <main>
-    <h2>Dobrodošli!</h2>
-    <p>Kliknite na navigaciju da pročitate više o nama, našim uslugama i kontaktima.</p>
-  </main>
-
-  <!-- Modal: O nama -->
-  <div id="onamaModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('onamaModal')">&times;</span>
-      <h2>O nama</h2>
-      <p>Mi smo tim posvećen pružanju vrhunskih usluga našim klijentima. Naš cilj je profesionalnost, kvalitet i povjerenje. Sa dugogodišnjim iskustvom, donosimo najbolje rješenje za Vas.</p>
-    </div>
-  </div>
-
-  <!-- Modal: Usluge -->
-  <div id="uslugeModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('uslugeModal')">&times;</span>
-      <h2>Usluge</h2>
-      <p><strong>Usluga 1:</strong> Kvalitetno, profesionalno i pouzdano.</p>
-      <p><strong>Usluga 2:</strong> Posvećenost detaljima i klijentima.</p>
-      <p><strong>Usluga 3:</strong> Najbolja rješenja za Vaše potrebe.</p>
-    </div>
-  </div>
-
-  <!-- Modal: Testimonijali -->
-  <div id="testimonialsModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('testimonialsModal')">&times;</span>
-      <h2>Testimonijali</h2>
-      <p>"Odlična saradnja i kvalitetna usluga!" – Klijent A</p>
-      <p>"Brzi, pouzdani i uvijek dostupni za pomoć." – Klijent B</p>
-      <p>"Preporučujem svima, vrhunska profesionalnost." – Klijent C</p>
-    </div>
-  </div>
-
-  <!-- Modal: Kontakt -->
-  <div id="kontaktModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('kontaktModal')">&times;</span>
-      <h2>Kontakt</h2>
-      <p><strong>Email:</strong> halilovicnusret8@gmail.com</p>
-      <p><strong>Telefon:</strong> +387 61 635 340</p>
-      <p><strong>Vlasnik:</strong> Vedran Burgić</p>
-    </div>
-  </div>
-
-  <footer>
-    <p>&copy; 2025 Sva prava zadržana.</p>
-  </footer>
-
-  <script>
-    function openModal(id) {
-      document.getElementById(id).style.display = 'flex';
-    }
-    function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-    // Klik izvan prozora zatvara modal
-    window.onclick = function(event) {
-      document.querySelectorAll('.modal').forEach(modal => {
-        if (event.target === modal) {
-          modal.style.display = 'none';
-        }
-      });
-    }
-  </script>
-
-</body>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIDOKTOR Voice Q&A</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="app.js"></script>
+  </body>
 </html>
+
+---
+
+// File: public/app.js (vanilla JS frontend for simplicity)
+// This is a small, dependency-free frontend that uses the Web Speech API.
+
+const startBtn = document.createElement('button');
+startBtn.textContent = 'Start Listening';
+const stopBtn = document.createElement('button');
+stopBtn.textContent = 'Stop Listening';
+stopBtn.disabled = true;
+const status = document.createElement('div');
+status.textContent = 'Idle';
+const transcriptEl = document.createElement('div');
+const replyEl = document.createElement('div');
+
+document.body.appendChild(startBtn);
+document.body.appendChild(stopBtn);
+document.body.appendChild(status);
+document.body.appendChild(document.createElement('hr'));
+document.body.appendChild(document.createTextNode('Transcript:'));
+document.body.appendChild(transcriptEl);
+document.body.appendChild(document.createElement('hr'));
+document.body.appendChild(document.createTextNode('Reply:'));
+document.body.appendChild(replyEl);
+
+// Check browser support
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) {
+  status.textContent = 'Web Speech API not supported in this browser.';
+  startBtn.disabled = true;
+}
+
+let recognition;
+let listening = false;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'bs-BA' || 'en-US'; // change as needed
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    listening = true;
+    status.textContent = 'Listening...';
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+  };
+
+  recognition.onresult = async (event) => {
+    const text = event.results[0][0].transcript;
+    transcriptEl.textContent = text;
+    status.textContent = 'Got text, sending to AIDOKTOR...';
+
+    try {
+      const r = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text })
+      });
+      const data = await r.json();
+      const reply = data.reply || data.choices?.[0]?.message?.content || 'No reply';
+      replyEl.textContent = reply;
+      status.textContent = 'Reply received — speaking...';
+
+      // Speak the reply
+      const utter = new SpeechSynthesisUtterance(reply);
+      utter.lang = 'bs-BA' || 'en-US';
+      utter.onend = () => { status.textContent = 'Idle'; };
+      speechSynthesis.speak(utter);
+    } catch (e) {
+      console.error(e);
+      status.textContent = 'Error contacting backend';
+    }
+  };
+
+  recognition.onerror = (e) => {
+    console.error('Recognition error', e);
+    status.textContent = 'Recognition error: ' + e.error;
+  };
+
+  recognition.onend = () => {
+    listening = false;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    if (status.textContent === 'Listening...') status.textContent = 'Idle';
+  };
+}
+
+startBtn.addEventListener('click', () => {
+  if (!recognition) return;
+  recognition.start();
+});
+stopBtn.addEventListener('click', () => {
+  if (!recognition) return;
+  recognition.stop();
+});
+
+---
+
+# Deployment & setup notes
+
+1. Put the backend code on a server (Heroku, Render, Railway, VPS, etc.).
+2. Set environment variable `AIDOKTOR` to your OpenAI API key on the server (never commit it). On Linux: `export AIDOKTOR=sk-...` or configure in the hosting dashboard.
+3. If you host frontend statically, make sure it points to the backend domain (replace `/api/chat` with full URL if on different origin) and enable CORS on the backend.
+4. If you truly want to store the API key in your GitHub repo (not recommended), move it to a file and ensure that file is private and ignored by Git — but again, better to use GitHub Secrets or environment variables.
+
+# Quick tips
+
+- If you prefer serverless, use an API route that reads `process.env.AIDOKTOR` from your host.
+- To transcribe audio on the server instead of using Web Speech API, upload raw audio and call OpenAI's speech-to-text endpoint (requires more code and file handling).
+
+---
+
+// End of document
