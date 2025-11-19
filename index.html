@@ -1,45 +1,70 @@
 <!DOCTYPE html>
-<html lang="bs">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AIDOKTOR – Glasovni asistent</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px;
-    }
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    #status, #transcript, #reply {
-      margin-top: 20px;
-      width: 80%;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    #reply {
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      padding: 10px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automatika Sekcije</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+  header { height: 200px; background-size: cover; background-position: center; }
+  nav { display: flex; gap: 10px; padding: 10px; background: #333; }
+  nav button { color: white; background: #555; border: none; padding: 10px; cursor: pointer; }
+  section { display: none; padding: 20px; border-bottom: 1px solid #ccc; }
+  section.active { display: block; }
+</style>
 </head>
 <body>
-  <h1>🩺 AIDOKTOR</h1>
-  <p>Pritisni dugme i reci svoje simptome.</p>
 
-  <button id="startBtn">🎙️ Start</button>
-  <button id="stopBtn" disabled>🛑 Stop</button>
+<header id="header"></header>
 
-  <div id="status">Status: spreman</div>
-  <div id="transcript"></div>
-  <div id="reply"></div>
+<nav>
+  <button data-section="faq">FAQ</button>
+  <button data-section="services">Services</button>
+  <button data-section="home">Home</button>
+  <button data-section="kontakt">Kontakt</button>
+</nav>
 
-  <script src="app.js"></script>
+<section id="faq">
+  <h2>FAQ Sekcija</h2>
+  <p>Ovo je FAQ sekcija.</p>
+</section>
+
+<section id="services">
+  <h2>Services Sekcija</h2>
+  <p>Ovo je Services sekcija.</p>
+</section>
+
+<section id="home">
+  <h2>Home Sekcija</h2>
+  <p>Ovo je Home sekcija.</p>
+</section>
+
+<section id="kontakt">
+  <h2>Kontakt Sekcija</h2>
+  <p>Ovo je Kontakt sekcija.</p>
+</section>
+
+<script>
+const header = document.getElementById('header');
+const buttons = document.querySelectorAll('nav button');
+const sections = document.querySelectorAll('section');
+
+buttons.forEach(button => {
+  button.addEventListener('click', () => {
+    const target = button.dataset.section;
+    
+    // Sakrij sve sekcije
+    sections.forEach(sec => sec.classList.remove('active'));
+    
+    // Prikaži samo izabranu sekciju
+    const activeSection = document.getElementById(target);
+    activeSection.classList.add('active');
+
+    // Promeni sliku u headeru
+    header.style.backgroundImage = "url('mca.jpg')";
+  });
+});
+</script>
+
 </body>
 </html>
